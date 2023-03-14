@@ -1,6 +1,8 @@
 #  Holistic Weighted Distillation for Semantic Segmentation
 
-This repository contains the source code of HWD.
+This repository contains the source code of HWD. You can download the pre-trained teacher models and ImageNet pre-trained student models from the URLs provided by [CIRKD](https://github.com/winycg/CIRKD). 
+
+Since ADE20K and COCO-Stuff teacher models are not released when we submit our paper, we trained these models by ourselves. Larger iterations (e.g., 80K, 160K) should be used when training the teacher.
 
 ## General parameter choices
 **model**  psp, psp_mobile, deeplabv3, deeplabv3_mobile 
