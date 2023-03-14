@@ -49,7 +49,7 @@ python -m torch.distributed.launch --nproc_per_node=4 train_hwd.py \
 
 ### First, modify the data path in settings.py!!!
 
-### Train the method xxx (Cityscapes, DeepLabV3-ResNet18)
+### Eval the method xxx (Cityscapes, DeepLabV3-ResNet18)
 ```
 python -m torch.distributed.launch --nproc_per_node=4 eval.py \
     --gpu-id 0,1,2,3 --dataset citys \
@@ -57,4 +57,3 @@ python -m torch.distributed.launch --nproc_per_node=4 eval.py \
     --method xxx \
     --pretrained [your checkpoint path]/xxx_deeplabv3_resnet18_citys_best_model.pth
 ```
-
