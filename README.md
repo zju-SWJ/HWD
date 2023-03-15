@@ -1,8 +1,11 @@
-#  [Holistic Weighted Distillation for Semantic Segmentation](https://zju-swj.github.io/papers/ICME2023-HWD/paper.pdf)
+# Holistic Weighted Distillation for Semantic Segmentation
 
 This repository contains the source code of HWD. You can download the pre-trained teacher models and ImageNet pre-trained student models from the URLs provided by [CIRKD](https://github.com/winycg/CIRKD). 
 
 Since ADE20K and COCO-Stuff teacher models are not released when we submitted our paper, we trained these models by ourselves. Larger iterations (e.g., 80K, 160K) should be used when training the teacher.
+
+## Paper
+[https://zju-swj.github.io/papers/ICME2023-HWD/paper.pdf](https://zju-swj.github.io/papers/ICME2023-HWD/paper.pdf)
 
 ## General parameter choices
 **model**  psp, psp_mobile, deeplabv3, deeplabv3_mobile 
