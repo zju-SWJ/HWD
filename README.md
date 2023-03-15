@@ -1,4 +1,4 @@
-#  Holistic Weighted Distillation for Semantic Segmentation
+#  [Holistic Weighted Distillation for Semantic Segmentation](https://zju-swj.github.io/papers/ICME2023-HWD/paper.pdf)
 
 This repository contains the source code of HWD. You can download the pre-trained teacher models and ImageNet pre-trained student models from the URLs provided by [CIRKD](https://github.com/winycg/CIRKD). 
 
