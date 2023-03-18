@@ -64,7 +64,7 @@ python -m torch.distributed.launch --nproc_per_node=4 eval.py \
 ## Citation
 If you find this repository useful, please consider citing the following paper (will be updated once the paper is formally published):
 ```
-@inproceedings{sun2022holistic,
+@inproceedings{sun2023holistic,
   title={Holistic Weighted Distillation for Semantic Segmentation},
   author={Sun, Wujie and Chen, Defang and Wang, Can and Ye, Deshi and Feng, Yan and Chen, Chun},
   booktitle={2023 IEEE International Conference on Multimedia and Expo (ICME)},
