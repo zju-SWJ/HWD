@@ -60,3 +60,14 @@ python -m torch.distributed.launch --nproc_per_node=4 eval.py \
     --method xxx \
     --pretrained [your checkpoint path]/xxx_deeplabv3_resnet18_citys_best_model.pth
 ```
+
+## Citation
+If you find this repository useful, please consider citing the following paper:
+```
+@inproceedings{sun2022holistic,
+  title={Holistic Weighted Distillation for Semantic Segmentation},
+  author={Sun, Wujie and Chen, Defang and Wang, Can and Ye, Deshi and Feng, Yan and Chen, Chun},
+  year={2023},
+  organization={IEEE},
+}
+```
