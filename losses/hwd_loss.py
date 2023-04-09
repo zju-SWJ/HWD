@@ -24,7 +24,7 @@ class CriterionHWD(nn.Module):
         count = torch.ones([n, c], dtype = torch.float).to(device) # count class-related pixel numbers
         for i in range(n):
             for j in range(c):
-                count[i, j] += torch.sum(labels[i] == c)
+                count[i, j] += torch.sum(labels[i] == j)
         if self.L == 'MSE':
             mse = nn.MSELoss(reduction='none')
             dis = torch.sum(mse(preds_S, preds_T), dim=-1)
