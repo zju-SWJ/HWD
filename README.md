@@ -45,7 +45,7 @@ python -m torch.distributed.launch --nproc_per_node=4 train_hwd.py \
     --teacher-pretrained [your checkpoint path]/deeplabv3_resnet101_citys_best_model.pth \
     --student-model deeplabv3 --student-backbone resnet18 \
     --student-pretrained-base [your checkpoint path]/resnet18-imagenet.pth \
-    --activation --L MSE --process E --parameter 0.1 --shift 1.0 --DivPixel N
+    --activation --L MSE --process E --parameter 0.1 --shift 1.0 --DivPixel None
 ```
 
 ## Evaluation Guidances
