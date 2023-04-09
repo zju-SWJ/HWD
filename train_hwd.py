@@ -27,7 +27,7 @@ from models.model_zoo import get_segmentation_model
 from utils.distributed import *
 from utils.logger import setup_logger
 from utils.score import SegmentationMetric
-from dataset.datasets import ADETrainSet, ADEValSet, CSTrainValSet, VOCDataSet, VOCDataValSet
+from dataset.datasets import ADETrainSet, ADEValSet, CSTrainValSet, VOCDataSet, VOCDataValSet, COCOTrainSet, COCOValSet
 from utils.flops import cal_multi_adds, cal_param_size
 from settings import *
 
@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--student-model', type=str, default='deeplabv3', help='model name')                      
     parser.add_argument('--student-backbone', type=str, default='resnet18', help='backbone name')
     parser.add_argument('--teacher-backbone', type=str, default='resnet101', help='backbone name')
-    parser.add_argument('--dataset', type=str, default='citys', choices=['citys', 'voc', 'ade20k'], help='dataset name')
+    parser.add_argument('--dataset', type=str, default='citys', choices=['citys', 'voc', 'ade20k', 'coco'], help='dataset name')
     parser.add_argument('--crop-size', type=str, default='512,512', help='crop image size: height,width')
     parser.add_argument('--workers', '-j', type=int, default=8, metavar='N', help='dataloader threads')
     parser.add_argument('--ignore-label', type=int, default=-1)
@@ -127,11 +127,16 @@ class Trainer(object):
                                             max_iters=args.max_iterations*args.batch_size, 
                                             crop_size=args.crop_size, scale=True, mirror=True)
             val_dataset = VOCDataValSet(DATA_VOC, list_path=DATALIST_VOC_VAL)
-        else:
+        elif args.dataset == 'ade20k':
             train_dataset = ADETrainSet(DATA_ADE20K, list_path=DATALIST_ADE20K_TRAIN, 
                                             max_iters=args.max_iterations*args.batch_size, 
                                             crop_size=args.crop_size, scale=True, mirror=True)
             val_dataset = ADEValSet(DATA_ADE20K, list_path=DATALIST_ADE20K_VAL)
+        elif args.dataset == 'coco':
+            train_dataset = COCOTrainSet(DATA_COCO, list_path=DATALIST_COCO_TRAIN, 
+                                            max_iters=args.max_iterations*args.batch_size, 
+                                            crop_size=args.crop_size, scale=True, mirror=True)
+            val_dataset = COCOValSet(DATA_COCO, list_path=DATALIST_COCO_VAL)
     
         args.batch_size = args.batch_size // num_gpus
         train_sampler = make_data_sampler(train_dataset, shuffle=True, distributed=args.distributed)
