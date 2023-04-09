@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument('--activation', action='store_true', default=False) # use the activation map
     parser.add_argument('--parameter', type=float, default=0.1) # should be combined with process, \beta for E, \tau' for T
     parser.add_argument('--shift', type=float, default=0.0) # distribution mean
-    parser.add_argument('--DivPixel', type=str, default='N', choices=['None', 'N', 'SqrtN', 'N2'])
+    parser.add_argument('--DivPixel', type=str, default='None', choices=['None', 'N', 'SqrtN', 'N2'])
     parser.add_argument('--spatial', action='store_true', default=False) # to be studied, do NOT use
     
     # cuda setting
