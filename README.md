@@ -67,8 +67,19 @@ Input Size 512x512, Batchsize 8, Iterations 40000, DeepLabV3-ResNet101->DeepLabV
 
 **bold** best result, *italic* worse than the baseline
 
+### Logit Softmax in DIST
+|Method|Cityscapes|ADE20K|
+|---|:--:|:--:|
+|Baseline         |71.784|29.862|
+|CWD              |73.565|32.898|
+|DIST (w/ Softmax) |71.984|30.168|
+|DIST (w/o Softmax)|73.42|31.677|
+|HWD              |**74.718**|**33.846**|
+
+The DIST paper uses softmax for logit before calculating distillation loss, but in our experiments, the performance obtained with or without using softmax varies with the data set. Based on the experimental results in the table above, we did not use softmax for logit in our appendix experiments. Whether used or not, its performance did not surpass CWD.
+
 ### Normal Distillation Iterations
-|Method|Cityscapes(512x1024, Batchsize 16, Iterations 20000)|VOC|
+|Method|Cityscapes (512x1024, Batchsize 16, Iterations 20000)|VOC|
 |---|:--:|:--:|
 |Baseline|72.793|71.979|
 |SKD     |73.643|*71.277*|
@@ -79,7 +90,7 @@ Input Size 512x512, Batchsize 8, Iterations 40000, DeepLabV3-ResNet101->DeepLabV
 |MGD     |73.508|72.142|
 
 ### Longer Distillation Iterations (Iterations 80000)
-|Method|Cityscapes|Cityscapes(512x1024, Batchsize 16, Iterations 40000)|VOC|ADE20K|
+|Method|Cityscapes|Cityscapes (512x1024, Batchsize 16, Iterations 40000)|VOC|ADE20K|
 |---|:--:|:--:|:--:|:--:|
 |Baseline|73.629|73.865|73.155|34.276|
 |SKD     |74.1|75.548|74.021|34.875|
