@@ -72,8 +72,8 @@ Input Size 512x512, Batchsize 8, Iterations 40000, DeepLabV3-ResNet101->DeepLabV
 |---|:--:|:--:|
 |Baseline         |71.784|29.862|
 |CWD              |73.565|32.898|
-|DIST (w/ Softmax) |71.984|30.168|
-|DIST (w/o Softmax)|73.42|31.677|
+|DIST (w/ Softmax) |73.42|30.168|
+|DIST (w/o Softmax)|71.984|31.677|
 |HWD              |**74.718**|**33.846**|
 
 The DIST paper uses softmax for logit before calculating distillation loss, but in our experiments, the performance obtained with or without using softmax varies with the data set. Based on the experimental results in the table above, we did not use softmax for logit in our appendix experiments. Whether used or not, its performance did not surpass CWD.
