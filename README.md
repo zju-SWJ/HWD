@@ -69,8 +69,8 @@ Input Size 512x512, Batchsize 8, Iterations 40000, DeepLabV3-ResNet101->DeepLabV
 
 ### Normal Distillation Iterations
 |Method|Cityscapes(512x1024, Batchsize 16, Iterations 20000)|VOC|
-|---|:--:|---:|
-|Baseline|72,793|71.979|
+|---|:--:|:--:|
+|Baseline|72.793|71.979|
 |SKD     |73.643|*71.277*|
 |IFVD    |73.963|*70.907*|
 |CWD     |**74.444**|**74.439**|
@@ -80,7 +80,7 @@ Input Size 512x512, Batchsize 8, Iterations 40000, DeepLabV3-ResNet101->DeepLabV
 
 ### Longer Distillation Iterations (Iterations 80000)
 |Method|Cityscapes|Cityscapes(512x1024, Batchsize 16, Iterations 40000)|VOC|ADE20K|
-|---|:--:|:--:|:--:|---:|
+|---|:--:|:--:|:--:|:--:|
 |Baseline|73.629|73.865|73.155|34.276|
 |SKD     |74.1|75.548|74.021|34.875|
 |IFVD    |74.799|76.265|74.087|*33.679*|
