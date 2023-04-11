@@ -123,7 +123,8 @@ class CriterionDIST(nn.Module):
         B, C, h, w = preds_S.size()
         preds_S = preds_S.permute(0, 2, 3, 1).contiguous().view(-1, C)
         preds_T = preds_T.permute(0, 2, 3, 1).contiguous().view(-1, C)
-
+        # preds_S = F.softmax(preds_S, dim=-1)
+        # preds_T = F.softmax(preds_T, dim=-1)
         inter_loss = self.inter_class_relation(preds_S, preds_T)
         intra_loss = self.intra_class_relation(preds_S, preds_T)
         loss = self.beta * inter_loss + self.gamma * intra_loss
