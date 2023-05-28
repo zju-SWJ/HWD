@@ -19,7 +19,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 
 from models.sagan_models import Discriminator
-from losses.loss import SegCrossEntropyLoss, CriterionKD, CriterionAdv, CriterionAdvForG, CriterionAdditionalGP, CriterionIFV
+from losses.loss import SegCrossEntropyLoss, CriterionKD, CriterionAdv, CriterionAdvForG, CriterionIFV
 from models.model_zoo import get_segmentation_model
 
 from utils.distributed import *
@@ -51,16 +51,10 @@ def parse_args():
 
     parser.add_argument("--lambda-kd", type=float, default=1.0, help="lambda_kd")
     parser.add_argument('--lambda-ifv', type=float, default=20.0, help='lambda_ifv')
-    parser.add_argument('--x-regions', type=int, default=1, help='x_regions')
-    parser.add_argument('--y-regions', type=int, default=1, help='y_regions')
-    parser.add_argument('--complex', action='store_true', default=False)
 
-    parser.add_argument("--no-adv", action='store_true', default=False)
     parser.add_argument("--lambda-adv", type=float, default=0.001, help="lambda_adv")
-    parser.add_argument("--lambda-gp", type=float, default=10.0, help="lambda_gp")
     parser.add_argument("--lambda-d", type=float, default=0.1, help="lambda_d")
     parser.add_argument("--adv-conv-dim", type=int, default=64, help="conv dim in adv")
-    parser.add_argument("--adv-loss-type", type=str, default='hinge', help="adversarial loss setting")
     parser.add_argument("--preprocess-GAN-mode", type=int, default=1, help="preprocess-GAN-mode should be tanh or bn")
     
     # cuda setting
@@ -167,11 +161,9 @@ class Trainer(object):
         self.criterion = SegCrossEntropyLoss(ignore_index=args.ignore_label).to(self.device)
         self.criterion_kd = CriterionKD().to(self.device)
         self.criterion_ifv = CriterionIFV(train_dataset.num_class).to(self.device)
-        self.criterion_adv_for_G = CriterionAdvForG(args.adv_loss_type).to(self.device)
+        self.criterion_adv_for_G = CriterionAdvForG('hinge').to(self.device)
 
-        self.criterion_adv = CriterionAdv(args.adv_loss_type).to(self.device)
-        if args.adv_loss_type == 'wgan-gp': 
-            self.criterion_AdditionalGP = CriterionAdditionalGP(self.D_model, args.lambda_gp).to(self.device)
+        self.criterion_adv = CriterionAdv('hinge').to(self.device)
 
         self.optimizer = torch.optim.SGD(self.s_model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
         self.optimizer_D = torch.optim.Adam(self.D_model.parameters(), args.lr_d, [0.9, 0.99])
@@ -216,8 +208,7 @@ class Trainer(object):
         logger.info('Start training, Total Iterations {:d}'.format(self.args.max_iterations))
 
         self.s_model.train()
-        if self.args.no_adv == False:
-            self.D_model.train()
+        self.D_model.train()
         for iteration, (images, targets, _) in enumerate(self.train_loader):
             iteration = iteration + 1
             
@@ -238,10 +229,7 @@ class Trainer(object):
             ifv_loss = self.args.lambda_ifv * self.criterion_ifv(s_outputs[-1], t_outputs[-1], targets)
             adv_G_loss = self.args.lambda_adv * self.criterion_adv_for_G(self.D_model(s_outputs[0]))
 
-            if self.args.no_adv == False:
-                losses = task_loss + kd_loss + ifv_loss + adv_G_loss
-            else:
-                losses = task_loss + kd_loss + ifv_loss
+            losses = task_loss + kd_loss + ifv_loss + adv_G_loss
             
             self.adjust_lr(base_lr=self.args.lr, iter=iteration-1, max_iter=self.args.max_iterations, power=0.9)
             self.optimizer.zero_grad()
@@ -253,36 +241,25 @@ class Trainer(object):
             ifv_losses_reduced = self.reduce_mean_tensor(ifv_loss)
             adv_G_losses_reduced = self.reduce_mean_tensor(adv_G_loss)
 
-            d_losses_reduced = 0.
-            if self.args.no_adv == False:
-                d_loss = self.args.lambda_d * self.criterion_adv(self.D_model(s_outputs[0].detach()), self.D_model(t_outputs[0].detach()))
-                if self.args.adv_loss_type == 'wgan-gp': 
-                    d_loss += self.args.lambda_d * self.criterion_AdditionalGP(s_outputs[0], t_outputs[0])
-                
-                self.adjust_lr_D(base_lr=self.args.lr_d, iter=iteration-1, max_iter=self.args.max_iterations, power=0.9)
-                self.optimizer_D.zero_grad()
-                d_loss.backward()
-                self.optimizer_D.step()
+            d_loss = self.args.lambda_d * self.criterion_adv(self.D_model(s_outputs[0].detach()), self.D_model(t_outputs[0].detach()))
+            
+            self.adjust_lr_D(base_lr=self.args.lr_d, iter=iteration-1, max_iter=self.args.max_iterations, power=0.9)
+            self.optimizer_D.zero_grad()
+            d_loss.backward()
+            self.optimizer_D.step()
 
-                d_losses_reduced = self.reduce_mean_tensor(d_loss)
+            d_losses_reduced = self.reduce_mean_tensor(d_loss)
 
             eta_seconds = ((time.time() - start_time) / iteration) * (self.args.max_iterations - iteration)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
 
             if iteration % log_per_iters == 0 and save_to_disk:
-                if self.args.no_adv == False:
-                    logger.info("Iters: {:d}/{:d} || Lr: {:.6f} || Task Loss: {:.4f} || KD Loss: {:.4f}" \
-                        "|| IFV Loss: {:.4f} || Adv_G Loss: {:.4f} || Adv_D Loss: {:.4f} " \
-                        "|| Cost Time: {} || Estimated Time: {}".format(
-                        iteration, self.args.max_iterations, self.optimizer.param_groups[0]['lr'], task_losses_reduced.item(),
-                        kd_losses_reduced.item(), ifv_losses_reduced.item(), adv_G_losses_reduced.item(), d_losses_reduced.item(),
-                        str(datetime.timedelta(seconds=int(time.time() - start_time))), eta_string))
-                else:
-                    logger.info("Iters: {:d}/{:d} || Lr: {:.6f} || Task Loss: {:.4f} || KD Loss: {:.4f}" \
-                        "|| IFV Loss: {:.4f} || Cost Time: {} || Estimated Time: {}".format(
-                        iteration, self.args.max_iterations, self.optimizer.param_groups[0]['lr'], task_losses_reduced.item(),
-                        kd_losses_reduced.item(), ifv_losses_reduced.item(),
-                        str(datetime.timedelta(seconds=int(time.time() - start_time))), eta_string))
+                logger.info("Iters: {:d}/{:d} || Lr: {:.6f} || Task Loss: {:.4f} || KD Loss: {:.4f}" \
+                    "|| IFV Loss: {:.4f} || Adv_G Loss: {:.4f} || Adv_D Loss: {:.4f} " \
+                    "|| Cost Time: {} || Estimated Time: {}".format(
+                    iteration, self.args.max_iterations, self.optimizer.param_groups[0]['lr'], task_losses_reduced.item(),
+                    kd_losses_reduced.item(), ifv_losses_reduced.item(), adv_G_losses_reduced.item(), d_losses_reduced.item(),
+                    str(datetime.timedelta(seconds=int(time.time() - start_time))), eta_string))
 
             if iteration % save_per_iters == 0 and save_to_disk:
                 save_checkpoint(self.s_model, self.args, is_best=False)

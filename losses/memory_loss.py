@@ -91,8 +91,7 @@ class StudentSegContrast(nn.Module):
                 num_pixel = idxs.shape[0]
                 perm = torch.randperm(num_pixel)    
                 K = min(num_pixel, self.pixel_update_freq)
-                feat = this_feat[:, idxs] # fix bug?
-                feat = this_feat[:, perm[:K]]
+                feat = this_feat[:, perm[:K]] # it seems to be a typo, idx should be used first to select the corresponding features?
                 feat = torch.transpose(feat, 0, 1) # (K,C)
                 ptr = int(self.pixel_queue_ptr[lb])
 

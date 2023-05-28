@@ -18,7 +18,7 @@ import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.nn.functional as F
 
-from losses.loss import CriterionMGD, SegCrossEntropyLoss, CriterionCWD
+from losses.loss import CriterionMGD, SegCrossEntropyLoss
 from models.model_zoo import get_segmentation_model
 
 from utils.distributed import *
@@ -48,7 +48,6 @@ def parse_args():
     parser.add_argument('--weight-decay', type=float, default=1e-4, metavar='M', help='w-decay (default: 5e-4)')
     parser.add_argument("--alpha-mgd", type=float, default=2e-5, help="alpha_mgd")
     parser.add_argument("--lambda-mgd", type=float, default=0.75, help="lambda_mgd")
-    parser.add_argument("--cwd", action='store_true', default=False)
     
     # cuda setting
     parser.add_argument('--gpu-id', type=str, default='0') 
@@ -150,7 +149,6 @@ class Trainer(object):
         # create criterion
         self.criterion = SegCrossEntropyLoss(ignore_index=args.ignore_label).to(self.device)
         self.criterion_mgd = CriterionMGD(args.lambda_mgd).to(self.device)
-        self.criterion_cwd = CriterionCWD(4.0, BatchNorm2d).to(self.device)
 
         self.optimizer = torch.optim.SGD(self.s_model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
         self.optimizer.add_param_group({'params':self.criterion_mgd.parameters(), 'initial_lr': args.lr})
@@ -208,8 +206,6 @@ class Trainer(object):
             mgd_loss = self.args.alpha_mgd * self.criterion_mgd(s_outputs[-1], t_outputs[-1])
 
             losses = task_loss + mgd_loss
-            if self.args.cwd == True:
-                losses += 3 * self.criterion_cwd(s_outputs[0], t_outputs[0])
             
             self.adjust_lr(base_lr=self.args.lr, iter=iteration-1, max_iter=self.args.max_iterations, power=0.9)
             self.optimizer.zero_grad()

@@ -6,7 +6,7 @@ import shutil
 import sys
 import warnings
 # !!! Our method was originally called WCWD, so if there is a problem with the code, see if it is caused by the unchanged naming !!!
-from losses.hwd_loss import CriterionHWD, CriterionHWD_SPATIAL
+from losses.hwd_loss import CriterionHWD
 warnings.filterwarnings("ignore")
 
 cur_path = os.path.abspath(os.path.dirname(__file__))
@@ -56,7 +56,6 @@ def parse_args():
     parser.add_argument('--parameter', type=float, default=0.1) # should be combined with process, \beta for E, \tau' for T
     parser.add_argument('--shift', type=float, default=0.0) # distribution mean
     parser.add_argument('--DivPixel', type=str, default='None', choices=['None', 'N', 'SqrtN', 'N2'])
-    parser.add_argument('--spatial', action='store_true', default=False) # to be studied, do NOT use
     
     # cuda setting
     parser.add_argument('--gpu-id', type=str, default='0') 
@@ -80,7 +79,7 @@ def parse_args():
 
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     if num_gpus > 1 and args.local_rank == 0:
-        args.log_dir = './final_hwd/'
+        args.log_dir = './hwd/'
         if args.activation == True:
             args.log_dir += 'Activation_'
         else:
@@ -88,11 +87,8 @@ def parse_args():
         args.log_dir += args.L+'_'+args.process+str(args.parameter)
         if args.process == 'E' and args.shift != 0.0:
             args.log_dir += '_Shift' + str(args.shift)
-        if args.spatial == True:
-            args.log_dir += '_SPATIAL'
-        else:
-            if args.DivPixel != 'None':
-                args.log_dir += '_Div' + args.DivPixel
+        if args.DivPixel != 'None':
+            args.log_dir += '_Div' + args.DivPixel
         args.save_dir = args.log_dir
         if not os.path.exists(args.log_dir):
             os.makedirs(args.log_dir)
@@ -171,10 +167,7 @@ class Trainer(object):
 
         # create criterion
         self.criterion = SegCrossEntropyLoss(ignore_index=args.ignore_label).to(self.device)
-        if args.spatial == True:
-            self.criterion_cwd = CriterionHWD_SPATIAL(norm=True, L=args.L, process=args.process, parameter=args.parameter).to(self.device)
-        else:
-            self.criterion_cwd = CriterionHWD(norm=True, L=args.L, process=args.process, parameter=args.parameter, DivPixel=args.DivPixel, shift=args.shift, activation=args.activation).to(self.device)
+        self.criterion_hwd = CriterionHWD(norm=True, L=args.L, process=args.process, parameter=args.parameter, DivPixel=args.DivPixel, shift=args.shift, activation=args.activation).to(self.device)
 
         self.optimizer = torch.optim.SGD(self.s_model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
         
@@ -226,8 +219,8 @@ class Trainer(object):
             else:
                 task_loss = self.criterion(s_outputs[0], targets)
             
-            cwd_loss = 3.0 * self.criterion_cwd(s_outputs[0], t_outputs[0], targets)
-            losses = task_loss + cwd_loss
+            hwd_loss = 3.0 * self.criterion_hwd(s_outputs[0], t_outputs[0], targets)
+            losses = task_loss + hwd_loss
             
             self.adjust_lr(base_lr=self.args.lr, iter=iteration-1, max_iter=self.args.max_iterations, power=0.9)
             self.optimizer.zero_grad()
@@ -235,7 +228,7 @@ class Trainer(object):
             self.optimizer.step()
 
             task_losses_reduced = self.reduce_mean_tensor(task_loss)
-            cwd_losses_reduced = self.reduce_mean_tensor(cwd_loss)
+            hwd_losses_reduced = self.reduce_mean_tensor(hwd_loss)
 
             eta_seconds = ((time.time() - start_time) / iteration) * (self.args.max_iterations - iteration)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -244,7 +237,7 @@ class Trainer(object):
                 logger.info("Iters: {:d}/{:d} || Lr: {:.6f} || Task Loss: {:.4f} || HWD Loss: {:.4f}" \
                         "|| Cost Time: {} || Estimated Time: {}".format(
                         iteration, self.args.max_iterations, self.optimizer.param_groups[0]['lr'], task_losses_reduced.item(),
-                        cwd_losses_reduced.item(), str(datetime.timedelta(seconds=int(time.time() - start_time))), eta_string))
+                        hwd_losses_reduced.item(), str(datetime.timedelta(seconds=int(time.time() - start_time))), eta_string))
 
             if iteration % save_per_iters == 0 and save_to_disk:
                 save_checkpoint(self.s_model, self.args, is_best=False)
